@@ -9,7 +9,8 @@ bun install
 To start a development server:
 
 ```bash
-bun dev
+bun run dev
+
 ```
 
 To run for production:
