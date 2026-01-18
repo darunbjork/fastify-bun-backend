@@ -1,52 +1,45 @@
 import type { FastifyInstance } from "fastify";
-import { messages, type Message } from "../data/messages";
+// We import our "Chef's" functions from the service file we commented on earlier
+import { getAllMessages, createMessage } from "@/services/messages.service";
 
 /**
- * messageRoutes is a "Plugin". 
- * Think of it as a specialized "Station" in our shop that only handles Messages.
+ * messageRoutes: The "Message Department" of our app.
  */
 export async function messageRoutes(server: FastifyInstance) {
   
   // ROUTE 1: The "Menu" (GET)
-  // When someone asks for /messages, we just show them our list.
   server.get('/messages', async () => {
-    return messages; // Fastify automatically "packs" this into JSON (The Box)
+    // We ask the service (the chef) to give us the current list
+    return getAllMessages(); 
   });
 
   // ROUTE 2: The "Order Taker" (POST)
-  // This is used when a customer wants to add a NEW message to the board.
   server.post('/messages', {
+    // THE SECURITY GUARD (Schema): 
+    // This checks the "Box" (JSON) before your code even touches it.
     schema: {
       body: {
         type: 'object',
-        required: ['user', 'text'],
+        required: ['user', 'text'], // If these are missing, the guard kicks the request out!
         properties: {
-          user: { type: 'string', minLength: 1 },
+          user: { type: 'string', minLength: 1 }, // Must be text, cannot be empty
           text: { type: 'string', minLength: 1 },
         },
       },
     },
   }, async (request, replay) => {
     
-    // 1. UNPACKING: We tell TypeScript to treat the "Box" content as a User and Text.
-    // (The 'as' keyword is our Labeling Machine)
+    // 1. LABELING: We tell TypeScript what's inside the validated request body.
     const body = request.body as {
       user: string,
       text: string,
     };
 
-    // 2. TICKET GENERATOR: We build a new Message object.
-    const newMessage: Message = {
-      id: messages.length + 1,            // Generate a unique ID (Ticket Number)
-      user: body.user,                    // Pull the name from the box
-      text: body.text,                    // Pull the text from the box
-      createdAt: new Date().toISOString(), // Stick a timestamp on it
-    };
-
-    // 3. SAVING: We push the new "Order" into our array (The Message Board)
-    messages.push(newMessage);
-
-    // 4. RECEIPT: We send the new message back to the user as confirmation.
+    // 2. ACTION: We send the ingredients to the service to create the new message.
+    const newMessage = createMessage(body.user, body.text);
+  
+    // 3. SUCCESS RESPONSE: 
+    // .code(201) is the universal code for "Successfully Created!"
     return replay.code(201).send(newMessage);
   })
 }
